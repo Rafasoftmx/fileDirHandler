@@ -18,18 +18,14 @@
                                                                
                                                                             
 
-* Simple class to handle some useful directory and file functions and zip compression
+* Simple class to handle some useful functions for directory, file and zip compression
 
 
 */
+require 'kint.phar';
 
-class fileDirHandler{	
-
-	
-	/**
-	 * The route in the file system
-	 * @var string
-	 */
+class fileDirHandler
+{
 	
 	public  $permissions = 0755; // dir or file access permissions used when create
 	//0600 -Read and write for owner, nothing for everybody else
@@ -43,10 +39,11 @@ class fileDirHandler{
 	public $name = ""; //name of the file or directory without extension
 	public $fileName = ""; //name of the file or directory, if is file contain extension
 	public $extension = ""; //file extension if has	
-	public $mimeType = ""; // Multipurpose Internet Mail Extensions,containing a type and a subtype in a string e.g. .jpg image is "image/jpeg"
-	public $type = ""; //type of path directory or file (dir/file)
-	public $exist = false; // if the file or directory exist 
+	public $mimeType = ""; // MIME type -Multipurpose Internet Mail Extensions-, containing a type and a subtype in a string e.g. .jpg image is "image/jpeg"
+	public $type = ""; //type of path directory or file ("dir" or "file")
+	public $exist = false; // if the file or directory exist in the file system
 	
+	public $tempDir = "fileDirHandler_temp"; // temp directory for some aip functions of the class, is created and deleted when is used 
 
 	
 	/**
@@ -54,16 +51,39 @@ class fileDirHandler{
 	 * 
 	 * @access public
 	 * @return void
+	 * @param string $path
 	 */
 	public function __construct($path = ""){
 		$this->SetPath($path);		
 	}	
 	
 	/**
-	 * Constructor
+	 * Determines if a directory is empty
+	 *
+	 * @access public
+	 * @return bool
+	 * @param string dir
+	 */
+	private function is_dirEmpty($dir)
+	{		
+		$handle = opendir($dir);
+		  while ( false !== ($entry = readdir($handle)) ) 
+		  {
+			if ($entry != "." && $entry != "..") {
+			  closedir($handle);
+			  return FALSE;
+			}
+		  }
+		  closedir($handle);
+		  return TRUE;
+	}
+	
+	/**
+	 * function to determine if an array contain a list of files created for the class
 	 * 
 	 * @access public
 	 * @return void
+	 * @param array $arr
 	 */
 	private function is_arrayListFiles($arr){
 		if(is_array($arr))
@@ -76,6 +96,10 @@ class fileDirHandler{
 					if(array_diff_key($arr[0],array_keys(array_keys($arr[0]))))
 					{
 						if(array_key_exists("fullpath", $arr[0]))// it means is an array from this class
+						{
+							return true;
+						}
+						elseif(array_key_exists("name", $arr[0]))// it means is an array from this class
 						{
 							return true;
 						}
@@ -119,11 +143,11 @@ class fileDirHandler{
 	}
 	
 	/**
-	 * Set the explorer path
+	 * clean a path, replace backslash and clean the last slash if exist
 	 *
-	 * @access public
+	 * @access private
 	 * @param string $path
-	 * @return void
+	 * @return string
 	 */
 	private function fixPath($path="")
 	{
@@ -133,10 +157,74 @@ class fileDirHandler{
 		return $path;
 	}
 	
+	
+	
+
 	/**
-	 * Get MIME Type of a file
+	 * get the current path
 	 *
 	 * @access public
+	 * @return string
+	 */
+	public function getPath(){
+		return $this->path;
+	}
+
+
+	/**
+	 * Set the pointing route in the file system and get some properties  for the class 
+	 *
+	 * @access public
+	 * @param string $path
+	 * @return void
+	 */
+	public function SetPath($path="")
+	{		
+		if($path != ""){ 			
+			$this->path = $this->fixPath($path);
+		}
+		else{
+			return;
+		}
+		
+		$ruteParts = pathinfo($this->path);
+		
+		$this->parentDir  = $ruteParts['dirname']; //Parent directory's path
+		$this->fileName = $ruteParts['basename']; //with extension
+		$this->name = $ruteParts['filename']; //without extension
+		
+		if (array_key_exists("extension",$ruteParts))
+		{
+			$this->extension = strtolower($ruteParts['extension']);
+			$this->mimeType = $this->getMimeType($this->path);
+			$this->type ="file"; // efine before just in case file no exist yet, it's supposition
+		}
+		else
+		{
+			$this->type ="dir"; //define before just in case file no exist yet, it's supposition
+			
+		}	
+		
+		
+		
+		if(is_file ($this->path))// if file exist
+		{
+			$this->type ="file";
+			$this->exist = true;
+		}
+		else if(is_dir($this->path))// if file exist
+		{
+			$this->type ="dir";
+			$this->exist = true;
+		}
+		
+	}
+
+	
+	/**
+	 * Get MIME Type of a file -Multipurpose Internet Mail Extensions-, containing a type and a subtype in a string e.g. .xls is "application/vnd.ms-excel"
+	 *
+	 * @access public static
 	 * @param string $file
 	 * @return string
 	 */
@@ -172,95 +260,10 @@ class fileDirHandler{
 	}
 	
 	
-	
-	/**
-	 * Zip file or directory
-	 *
-	 * @access public
-	 * @return bool
-	 */
-	private function is_dirEmpty($dir)
-	{		
-		$handle = opendir($dir);
-		  while (false !== ($entry = readdir($handle))) {
-			if ($entry != "." && $entry != "..") {
-			  closedir($handle);
-			  return FALSE;
-			}
-		  }
-		  closedir($handle);
-		  return TRUE;
-	}
-	
-	/**
-	 * get the current path
-	 *
-	 * @access public
-	 * @param string $path
-	 * @return void
-	 */
-	public function getPath(){
-		return $this->path;
-	}
-
-
-	/**
-	 * Set the explorer path
-	 *
-	 * @access public
-	 * @param string $path
-	 * @return void
-	 */
-	public function SetPath($path="")
-	{		
-		if($path != ""){ 			
-			$this->path = $this->fixPath($path);
-		}
-		else{
-			return;
-		}
-		
-		$ruteParts = pathinfo($this->path);
-
-
-		
-		$this->parentDir  = $ruteParts['dirname']; //Parent directory's path
-		$this->fileName = $ruteParts['basename']; //with extension
-		$this->name = $ruteParts['filename']; //without extension
-		if (array_key_exists("extension",$ruteParts))
-		{
-			$this->extension = strtolower($ruteParts['extension']);
-			$this->mimeType = $this->getMimeType($this->path);
-			$this->type ="file"; // define earlier just in case file no exist, it's supposition
-		}
-		else
-		{
-			$this->type ="dir"; // define earlier just in case file no exist, it's supposition
-			
-		}	
-		
-		
-		
-		if(is_file ($this->path))// if file exist
-		{
-			$this->type ="file";
-			$exist = true;
-		}
-		else if(is_dir($this->path))// if file exist
-		{
-			$this->type ="dir";
-			$exist = true;
-		}
-		
-		
-		
-	}
-
 	/**
 	 * Read file content using fopen and fread, return all file contents
 	 * 
 	 * @access public
-	 * @param string $filename
 	 * @return string
 	 */
 	public function Read(){
@@ -274,12 +277,21 @@ class fileDirHandler{
 	 * Write string content to file using fopen and fwrite
 	 * 
 	 * @access public
-	 * @param string $filename
-	 * @param string $contents
+	 * @param string contents
+	 * @param bool overwrite
 	 * @return bool
 	 */
-	public function Write($contents){
-		if($handle = fopen($this->path,"w")){
+	public function Write($contents,$overwrite=false){
+		
+		$flag = $overwrite ? "w" : "a";
+		
+		if($this->exist == false)
+		{
+			$this->Create();
+		}
+		
+		if($handle = fopen($this->path,$flag))
+		{	
 			fwrite($handle, $contents); 
 			fclose($handle); 
 			return true;
@@ -295,20 +307,25 @@ class fileDirHandler{
 	 * @param bool $overwrite If true exist file is overwrited
 	 * @return bool
 	 */
-	public function Create($is_dir=false, $overwrite =false){
+	public function Create($overwrite = false)
+	{
 		if(file_exists($this->path) && !$overwrite ) return false;
-		if(!$is_dir){
+		
+		if($this->type == "file")
+		{
 			$parts = explode("/", $this->path);
 			$path = "";
 			foreach ($parts as $part){
 				if($part == end($parts)) break;
 				$path .= $part . "/";
-				@mkdir($path, $this->permissions);
+				@mkdir($path, $this->permissions);				
 			}
 			if($handle = fopen($this->path, 'w')){
 				fclose($handle);
 			}
-		}else{
+		}
+		else
+		{
 			$parts = explode("/", $this->path);
 			$path = "";
 			foreach ($parts as $part){
@@ -325,40 +342,66 @@ class fileDirHandler{
 	 * 
 	 * @access public
 	 * @return bool
+	 * @param bool onlyFilesInsideDir 
 	 */
-	public function Delete(){
-		if(is_dir($this->path) && $this->path != ""){
-			$result = $this->Listing();
+	public function Delete($onlyFilesInsideDir = false)
+	{
+		if(is_dir($this->path) && $this->path != "")
+		{
+			$result = $this->listDir();
 			
 			// makes a map and sort them to progressive deletion, from files to directories
 			$sort_result = array();
-			foreach($result as $item){
-				if($item['type'] == "file"){
+			
+			foreach($result as $item)
+			{
+				if($item['type'] == "file")
+				{
 					array_unshift($sort_result, $item);
-				}else{
+				}
+				else
+				{
 					$sort_result[] = $item;
 				}
 			}
 			
 			$trys =0;
+			$continue = true;
 			// Start deleting
-			while(file_exists($this->path)){
-				if(is_array($sort_result)){
-					foreach($sort_result as $item){
-						if($item['type'] == "file"){
+			while($continue)
+			{
+				if(is_array($sort_result))
+				{
+					foreach($sort_result as $item)
+					{
+						if($item['type'] == "file")
+						{
 							@unlink($item['fullpath']);
-						}else{
+						}
+						else
+						{
 							@rmdir($item['fullpath']);
 						}
 					}
 				}
-				@rmdir($this->path);
+				
 				
 				$trys++;
-				if ($trys >= 2){break;}
+				if ($trys >= 200){break;} //max trys to delete directory
+				
+				
+				if($onlyFilesInsideDir == true )// only removes de files and dirs inside
+				{
+					$continue = !$this->is_dirEmpty($this->path); // while dir contains files
+				}				
+				else
+				{
+					@rmdir($this->path);// remove the directory path
+					$continue = file_exists($this->path); // wile dir exist
+				}
 				
 			}
-			return !file_exists($this->path);
+			return !$continue;
 		}else{
 			@unlink($this->path);
 			return !file_exists($this->path);
@@ -370,47 +413,108 @@ class fileDirHandler{
 	 *
 	 * @access public
 	 * @param string $destination
-	 * @param bool $create
+	 * @param string $includeSelfFolder
 	 * @return bool
 	 */
-	public function Copy($destination){
-		if($destination == "") throw new Exception("Destination is not specified.");
+	public function Copy($destination, $includeSelfFolder = false)
+	{
+		if($destination == "") {throw new Exception("Destination is not specified.");}
+		if($this->exist == false){throw new Exception("file that try to copy not exist");}
 			
-		$destination = $this->fixPath($destination);		
+		$destination = $this->fixPath($destination);
 	
-		if(is_dir($this->path)){
+		if($this->type == "dir")
+		{
+			
+			if($includeSelfFolder)
+			{
+				$destination .= "/".$this->fileName;//adds the folder name of the directory that is copied
+			}			
 			
 			// Create paths recursively
-			$result = $this->Listing();
+			$result = $this->listDir();
 			$paths = array();
 			$files = array();
-			foreach ($result as $item){
-				if($item["type"] == "dir"){
-					$paths[] = str_replace($this->path, "", $item['fullpath']);
-				}else{
-					$file = str_replace($this->path, "", $item['fullpath']);
+			foreach ($result as $item)
+			{
+				if($item["type"] == "dir")
+				{
+					$pathToReplace = '/'.preg_quote($this->path, '/').'/';
+					$paths[] = preg_replace($pathToReplace,"",$item["fullpath"],1); // replace the first coincidence
+				}
+				else
+				{
+					$pathToReplace = '/'.preg_quote($this->path, '/').'/';
+					$file = preg_replace($pathToReplace,"",$item["fullpath"],1);	// replace the first coincidence				
 					$files[] = (substr($file, 0, 1) == "/") ? $file : "/" . $file;
 				}
 			}
+			
+			//Sort paths based on the strings lengths
 			uasort($paths, array($this, "lengthSort"));
 			
+			
 			// Create directory structure
-			foreach ($paths as $path){
+			foreach ($paths as $path)
+			{
 				$path = (substr($path, 0, 1) == "/") ? $path : "/" . $path;
 				$new_directory = $destination . $path;
-				@mkdir($destination, $this->permissions);
-				if(!file_exists($new_directory)){
-					@mkdir($new_directory, $this->permissions);
+				
+				if(!file_exists($new_directory))
+				{
+					$fdh = new fileDirHandler($new_directory);
+					$fdh->Create();
 				}
 			}
 			
+			
+			$fdh = new fileDirHandler($destination);
+			if($fdh->type == "file")
+			{
+				throw new Exception("destination can't be a file when try to copy a directory");
+			}
+			
 			// Copy files
-			foreach ($files as $file){
+			foreach ($files as $file)
+			{
+
+			 
+				if($fdh->exist == false)// if destination directory not exist
+				{
+					$fdh->Create();
+				}	
 				@copy($this->path . $file, $destination . $file);
 			}
+			
 			return file_exists($destination);
-		}else{
+		}
+		else
+		{	
+			$fdh = new fileDirHandler($destination);
+			
+			if($fdh->type == "dir")// if is directory
+			{
+				if($fdh->exist == false)// if directory destination not exist
+				{
+					$fdh->Create();					
+				}				
+				$destination .= "/".$this->fileName; // includes the filename of the file that we are coping
+			}
+		 	else
+			{	
+				$fdh->SetPath($fdh->parentDir);// the directory destination of the file
+				
+				if($fdh->exist == false)// if directory destination not exist
+				{
+					$fdh->Create();					
+				}
+			}
+			
+			
+
+			
 			@copy($this->path, $destination);
+			
 			return file_exists($destination);
 		}
 
@@ -421,23 +525,41 @@ class fileDirHandler{
 	 * 
 	 * @access public
 	 * @param string $destination
+	 * @param string $includeSelfFolder
 	 * @access void
 	 */
-	public function Move($destination){
-		$this->Copy($destination);
-		$this->Delete();
-		return (file_exists($destination) && !file_exists($this->path));
+	public function Move($destination,$includeSelfFolder = false){
+		
+		$copyResult = $this->Copy($destination,$includeSelfFolder);
+		
+		if($copyResult)
+		{
+			if($this->type == "dir" && $includeSelfFolder == false)// if only move the contents of directory just delete the files that we moved
+			{
+				$this->Delete(true);
+			}
+			else// else we delete all the directory or file we move
+			{
+				$this->Delete();
+			}
+			
+		}		
+		return ($copyResult && !file_exists($this->path));
 	}
 	
 	/**
 	 * List directory content
 	 * 
 	 * @access public
-	 * @param array $exclude
 	 * @param bool $recursive
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
+	 * @param array $list
+	 * @param string $dir
 	 * @return array
 	 */
-	public function Listing($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir=""){
+	public function listDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir=""){
 
 		// Lowercase excluded arrays
 		$exclude_extension = array_map("strtolower", $exclude_extension);
@@ -451,19 +573,18 @@ class fileDirHandler{
 		$dir_handle = @opendir($dir) or die("Unable to open $dir"); 
 
 		// Loop files 
-		while ($file = readdir($dir_handle)) { 
-			
-		$extension="";	
-		$ruteParts = pathinfo($dir . $file);
+		while ($file = readdir($dir_handle))
+		{			
+			$extension="";	
+			$ruteParts = pathinfo($dir . $file);
 
-		if (array_key_exists("extension",$ruteParts))
-		{
-			$extension = $ruteParts['extension'];
-		}	
-			
+			if (array_key_exists("extension",$ruteParts))
+			{
+				$extension = strtolower($ruteParts['extension']);
+			}			
 			
 			// omit dots and extension excluded
-			if($file == "." || $file == ".." || in_array($extension, $exclude_extension)) continue; 
+			if($file == "." || $file == ".." || in_array($extension, $exclude_extension)){ continue; }
 			
 			if(is_dir($dir . $file)){
 				if(!in_array(strtolower($file), $exclude_dir)){
@@ -489,7 +610,7 @@ class fileDirHandler{
 			}
 			
 			if($recursive && is_dir($dir . $file) && !in_array(strtolower($file), $exclude_dir)){
-				$this->Listing($recursive, $exclude_extension, $exclude_file, $exclude_dir, $list, $dir . $file);
+				$this->listDir($recursive, $exclude_extension, $exclude_file, $exclude_dir, $list, $dir . $file);
 			}
 			
 		} 
@@ -501,405 +622,865 @@ class fileDirHandler{
 		
 	}
 	
-
 	/**
-	 * Move directory or file
+	 * List directory content in a simple numeric array with the files and directories
 	 * 
 	 * @access public
-	 * @param string $destination
-	 * @access void
+	 * @param bool $recursive
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
+	 * @param array $list
+	 * @param string $dir
+	 * @return array
 	 */
-	private function getZipFilesPath($file=null,$fullpath="",$type="",$rootPath="",$includeSelfFolder = false,$createOnPath = "")
-	{
-				
-		if($file == null)
-		{
-			$file= array();
-		}
+	public function simpleListDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir=""){
+
+		// Lowercase excluded arrays
+		$exclude_extension = array_map("strtolower", $exclude_extension);
+		$exclude_file = array_map("strtolower", $exclude_file);
+		$exclude_dir = array_map("strtolower", $exclude_dir);
 		
-		if (!array_key_exists("fullpath",$file))
-		{
-			$file["fullpath"] =$fullpath;
-		}
-		if (!array_key_exists("type",$file))
-		{
-			$file["type"] =$type;
-		}
-		
-		
-		if($rootPath == "")
-		{			
-			$ruteParts = pathinfo($file["fullpath"]);
-			
-			if($createOnPath != "")
+		$dir = ($dir == "") ? $this->path : $dir;
+		if(substr($dir, -1) != "/") $dir .= "/";
+
+		// Open folder 
+		$dir_handle = @opendir($dir) or die("Unable to open $dir"); 
+
+		// Loop files 
+		while ($file = readdir($dir_handle)) 
+		{ 			
+			$extension="";	
+			$ruteParts = pathinfo($dir . $file);
+
+			if (array_key_exists("extension",$ruteParts))
 			{
-				$file["ZipFilePath"] = $this->fixPath($createOnPath)."/".$ruteParts["basename"];
-			}
-			else
-			{
-				$file["ZipFilePath"] = $ruteParts["basename"];
+				$extension = strtolower($ruteParts['extension']);
 			}			
-		}
-		else
-		{	
-			$pathToReplace = '/'.preg_quote($rootPath, '/').'/';// erase "rootPath" from "file Path"
-			$newFilePath = preg_replace($pathToReplace,"",$file["fullpath"],1);
 			
-			$newFilePath = (substr($newFilePath, 0,1) == "/") ? substr($newFilePath, 1,strlen($newFilePath)) : $newFilePath;	
-			
-			
-			
-			if($includeSelfFolder)
-			{
-				$ruteParts = pathinfo($rootPath);
-				$SelfFolder = $ruteParts["basename"];
-				
-				
-				if($createOnPath!= "" && $SelfFolder !="" )
+			// omit dots and extension excluded
+			if($file == "." || $file == ".." || in_array($extension, $exclude_extension)){ continue; }
+
+			if(is_dir($dir . $file)){
+				if(!in_array(strtolower($file), $exclude_dir))
 				{
-					$file["ZipFilePath"] = $this->fixPath($createOnPath)."/".$SelfFolder."/".$newFilePath;
+					$list[] = $dir . $file;
 				}
-				elseif($SelfFolder != "")
+			}else{
+				if(!in_array(strtolower($file), $exclude_file))
 				{
-					$file["ZipFilePath"] = $SelfFolder."/".$newFilePath;
+					$list[] = $dir . $file;
 				}
-				else
-				{
-					$file["ZipFilePath"] = $newFilePath;
-				}
-				
-			}
-			else
-			{
-				if($createOnPath != "")
-				{
-					$file["ZipFilePath"] = $this->fixPath($createOnPath)."/".$newFilePath;
-				}
-				else
-				{
-					$file["ZipFilePath"] = $newFilePath;
-				}
-				
 			}
 
+			if($recursive && is_dir($dir . $file) && !in_array(strtolower($file), $exclude_dir)){
+				$this->simpleListDir($recursive, $exclude_extension, $exclude_file, $exclude_dir, $list, $dir . $file);
+			}
 			
+		} 
+		
+		// Close 
+		closedir($dir_handle); 
+		
+		return $list;
+		
+	}
+	
+	/**
+	 * create a simple numeric array from the file list created from this class
+	 * 
+	 * @access private
+	 * @param array $files
+	 * @return array
+	 */
+	private function getSimpleList($files=null)
+	{
+		if($files == null){return;}
+		
+		$listeFiles = array();
+		foreach($files as $file)
+		{
+			if(array_key_exists("fullpath", $file))// it means is an array from this class
+			{
+				$listeFiles[] = $file["fullpath"];
+			}
+			elseif(array_key_exists("name", $file))// it means is an array from this class
+			{
+				$listeFiles[] = $file["name"];
+			}
+			
+		}	
+		
+		return $listeFiles;
+	}
+	
+	
+	
+	/**
+	 * normalize list of files to simple numeric array, acept file list created from this class and comma separated string
+	 * 
+	 * @access public
+	 * @param mixed $files
+	 * @return void
+	 */
+	private function normalizeFilesList($files=null)
+	{
+		// normalize $files to simple numeric array
+		if(is_array($files))
+		{
+			if($this->is_arrayListFiles($files))// if is associative array from this class
+			{
+				$files = $this->getSimpleList($files);
+			}
+		}
+		elseif(is_string ($files))
+		{
+			$filesStr = explode(",", $files);
+			$files = array();
+			foreach($filesStr as $f)
+			{
+				if(is_numeric($f))
+				{
+					$files[] = intval($f);
+				}
+				else
+				{
+					$files[] = trim($f);
+				}				 
+			}
+			
+		}	
+		
+		return $files;
+	}
+	
+	/**
+	 * return array with file information to add zip file. fullpath= file path, type = "dir" or "file", zipFilePath= Path in zip file
+	 * 
+	 * @access public
+	 * @param string $fullpath
+	 * @param string $type
+	 * @param string $rootPath
+	 * @param string $includeSelfFolder
+	 * @param string $createOnPath
+	 * @return array
+	 */
+	private function getZipFileInfo($fullpath="",$type="",$rootPath="",$includeSelfFolder = false,$createOnPath = "")
+	{				
+		$file= array();
+		$file["fullpath"] =$fullpath;
+		$file["type"] =$type;
+		
+		$rutePartsFile = pathinfo($file["fullpath"]);
+		$fileName = $rutePartsFile["basename"];
+		$SelfFolder = "";		
+
+		
+		if($createOnPath != "")
+		{
+			$createOnPath = $this->fixPath($createOnPath)."/";
+		}
+		
+		if($includeSelfFolder == true && $rootPath != "")
+		{
+			$partsRootPath = pathinfo($rootPath);
+			$SelfFolder = $partsRootPath["basename"]."/";
+		}
+		
+		
+		if($rootPath != "")
+		{
+			$pathToReplace = '/'.preg_quote($rootPath, '/').'/';// erase "rootPath" from "file Path"
+			$newFilePath = preg_replace($pathToReplace,"",$file["fullpath"],1);			
+			$newFilePath = (substr($newFilePath, 0,1) == "/") ? substr($newFilePath, 1,strlen($newFilePath)) : $newFilePath;	// delete "/" in the begin if exist
+			
+			$file["zipFilePath"] = $createOnPath.$SelfFolder.$newFilePath;
+		}
+		else
+		{
+			$file["zipFilePath"] = $createOnPath.$SelfFolder.$fileName;
 		}
 		
 		return $file;
 	}
-	
 
 	
 	/**
-	 * Zip file or directory
-	 *
+	 * makes and return a list of files with the information to add in the zip file
+	 * 
+	 * @param mixed $files
+	 * @param bool $recursive
+	 * @param bool $includeSelfFolder
+	 * @param string $createOnPath
+	 * @param string $rootPath
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
 	 * @access public
-	 * @return bool
+	 * @return array
 	 */
-	private function makeFileList($files = null,$recursive = true,$includeSelfFolder = false,$createOnPath = "",$rootPath="",$exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
+	private function getZipFileList($files = null,$recursive = true,$includeSelfFolder = false,$createOnPath = "",$rootPath="",$exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
 	{	
+		if($files == null){ return;}
+		
 		$listFiles =  array();
 		
-		if($files != null)
+		$files = $this->normalizeFilesList($files);
+		
+		foreach($files as $item)
 		{
-			if(is_array($files))
+			$item = $this->fixPath($item);
+
+			if(is_file ($item))// is file
 			{
-				if($this->is_arrayListFiles($files))// if is associative array from this class
-				{
-					foreach($files as $item)
-					{	
-						if($item["type"] == "file")// is file
-						{
-							$listFiles[] = $this->getZipFilesPath($item,"","",$rootPath,$includeSelfFolder,$createOnPath);
-						}
-						else// is dir
-						{				
-							$rootPathDir =$this->getZipFilesPath($item,"","",$rootPath,$includeSelfFolder,$createOnPath);
-							if($rootPathDir["fullpath"] != "")
-							{
-								$listFiles[] = $rootPathDir;
-							}
-							
-							if($recursive)// if is recursive
-							{
-								$fdh = new fileDirHandler($item["fullpath"]);
-								$dirFiles = $fdh->Listing($recursive, $exclude_extension, $exclude_file, $exclude_dir);
-
-								foreach($dirFiles as $dirFile)
-								{
-									$listFiles[] = $this->getZipFilesPath($dirFile,"","",$rootPath,$includeSelfFolder,$createOnPath);
-								}
-							}
-							
-						}
-
-					}
-				}
-				else// normal array
-				{
-					foreach($files as $item)
-					{
-						$item = $this->fixPath($item);
-						
-						if(is_file ($item))// is file
-						{
-							$listFiles[] = $this->getZipFilesPath(null,$item,"file",$rootPath,$includeSelfFolder,$createOnPath);
-						}
-						elseif(is_dir($item))// is dir
-						{
-							$rootPathDir = $this->getZipFilesPath(null,$item,"dir",$rootPath,$includeSelfFolder,$createOnPath);
-							if($rootPathDir["fullpath"] != "")
-							{
-								$listFiles[] = $rootPathDir;
-							}
-							
-							if($recursive) //if is recursive
-							{
-								$fdh = new fileDirHandler($item);
-								$dirFiles = $fdh->Listing($recursive, $exclude_extension, $exclude_file, $exclude_dir);
-
-								foreach($dirFiles as $dirFile)
-								{
-									$listFiles[] = $this->getZipFilesPath($dirFile,"","",$rootPath,$includeSelfFolder,$createOnPath);
-								}
-							}
-						}
-						else
-						{
-							$ruteParts = pathinfo($item);
-
-							if (array_key_exists("extension",$ruteParts))
-							{
-								$listFiles[] = $this->getZipFilesPath(null,$item,"file",$rootPath,$includeSelfFolder,$createOnPath);
-							}
-							else
-							{
-								$listFiles[] = $this->getZipFilesPath(null,$item,"dir",$rootPath,$includeSelfFolder,$createOnPath);
-							}
-							
-						}
-					}
-				}
+				$listFiles[] = $this->getZipFileInfo($item,"file",$rootPath,$includeSelfFolder,$createOnPath);
 			}
-			elseif(is_string ($files))
+			elseif(is_dir($item))// is dir
 			{
-				$stringFiles = explode(",", $files);
+				//include the the folder
+				$rootPathDir = $this->getZipFileInfo($item,"dir",$rootPath,$includeSelfFolder,$createOnPath);
+				if($rootPathDir["fullpath"] != "")
+				{
+					$listFiles[] = $rootPathDir;
+				}
 				
-				foreach($stringFiles as $item)
-				{
-					$item = $this->fixPath($item);
-					
-					if(is_file ($item))// is file
-					{
-						$listFiles[] = $this->getZipFilesPath(null,$item,"file",$rootPath,$includeSelfFolder,$createOnPath);
-					}
-					elseif(is_dir($item))// is dir
-					{
-						
-						$rootPathDir = $this->getZipFilesPath(null,$item,"dir",$rootPath,$includeSelfFolder,$createOnPath);
-						if($rootPathDir["fullpath"] != "")
-						{
-							$listFiles[] = $rootPathDir;
-						}						
-						
-						if($recursive)//if is recursive
-						{
-							$fdh = new fileDirHandler($item);
-							$dirFiles = $fdh->Listing($recursive, $exclude_extension, $exclude_file, $exclude_dir);
-							foreach($dirFiles as $dirFile)
-							{
-								$listFiles[] = $this->getZipFilesPath($dirFile,"","",$rootPath,$includeSelfFolder,$createOnPath);
-							}
-						}
-					}
-					else
-					{
-						$ruteParts = pathinfo($item);
+				//include the files inside the folder, if is recursive includes sub folders
+				$fdh = new fileDirHandler($item);
+				$dirFiles = $fdh->listDir($recursive, $exclude_extension, $exclude_file, $exclude_dir);
 
-						if (array_key_exists("extension",$ruteParts))
-						{
-							$listFiles[] = $this->getZipFilesPath(null,$item,"file",$rootPath,$includeSelfFolder,$createOnPath);
-						}
-						else
-						{
-							$listFiles[] = $this->getZipFilesPath(null,$item,"dir",$rootPath,$includeSelfFolder,$createOnPath);
-						}	
-					}
+				foreach($dirFiles as $dirFile)
+				{
+					$listFiles[] = $this->getZipFileInfo($dirFile["fullpath"],$dirFile["type"],$rootPath,$includeSelfFolder,$createOnPath);
 				}
 			}
+			else
+			{
+				$ruteParts = pathinfo($item);
 
+				if (array_key_exists("extension",$ruteParts))
+				{
+					$listFiles[] = $this->getZipFileInfo($item,"file",$rootPath,$includeSelfFolder,$createOnPath);
+				}
+				else
+				{
+					$listFiles[] = $this->getZipFileInfo($item,"dir",$rootPath,$includeSelfFolder,$createOnPath);
+				}
+			}
 		}
-
 		
 		return $listFiles;
-		
 	}
-
 	
 
 	
 	/**
-	 * Zip file or directory
-	 *
+	 * create zip file with the file or directory path set, or define list of files or directories to add
+	 * 
+	 * @param string $zipName
+	 * @param bool $overwrite
+	 * @param bool $recursive
+	 * @param bool $includeSelfFolder
+	 * @param bool $includeEmptyFolders
+	 * @param string $createOnPath
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
 	 * @access public
-	 * @return bool
+	 * @return void
 	 */
-	public function zipCreate($zipName = "",$overwrite = false,$recursive = true,$includeSelfFolder = false,$includeEmptyFolders= true, $createOnPath = "",$fromFiles= null ,$exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
+	public function zipCreate($zipName = "",$overwrite = false,$recursive = true,$includeSelfFolder = false,$includeEmptyFolders= true, $createOnPath = "",$fromFiles= null, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
 	{
-		$flags = ($overwrite ? ZIPARCHIVE::CREATE | ZIPARCHIVE::OVERWRITE : ZIPARCHIVE::CREATE);
+		
+		
+		$flags = $overwrite ?  ZIPARCHIVE::OVERWRITE : ZIPARCHIVE::CREATE;
+		
+		if(is_file($zipName) == false && $overwrite == true) // if file not exist and overwrite is true
+		{
+			$flags = ZIPARCHIVE::CREATE;
+		}
+		
+		
+		
+		
 		$files= array();
 		$dirs= array();
 		
 		if($fromFiles!== null)
-		{
-			if($recursive)
-			{
-				$listFiles = $this->makeFileList($fromFiles,false,$includeSelfFolder,$createOnPath,"",$exclude_extension,$exclude_file,$exclude_dir);
-				
-				foreach($listFiles as  $item)
-				{
-					if($item["type"] == "file")
-					{
-						$files[] = $item;
-					}
-					else
-					{						
-						$files = array_merge(
-							$files,
-							$this->makeFileList($item["fullpath"],$recursive,$includeSelfFolder,$createOnPath,$item["fullpath"],$exclude_extension,$exclude_file,$exclude_dir));
-					}
-				}
-				
-				
-			}
-			else
-			{
-				$files = $this->makeFileList($fromFiles,$recursive,$includeSelfFolder,$createOnPath,"",$exclude_extension,$exclude_file,$exclude_dir);
-			}
-			
-			
-			
-		}		
-		elseif(is_dir($this->path))
 		{			
-			$files = $this->makeFileList($this->path,$recursive,$includeSelfFolder,$createOnPath,$this->path,$exclude_extension,$exclude_file,$exclude_dir);
-		}
-		elseif(is_file ($this->path))
-		{
-			$files = $this->makeFileList($this->path,false,false,$createOnPath,"",$exclude_extension,$exclude_file,$exclude_dir);
+			$fromFiles = $this->normalizeFilesList($fromFiles);
+			
+			foreach($fromFiles as $item)
+			{
+				$item = $this->fixPath($item);
+				
+				if(is_dir($item))
+				{
+					$files = array_merge($files,$this->getZipFileList($item,$recursive,$includeSelfFolder,$createOnPath,$item,$exclude_extension,$exclude_file,$exclude_dir));		
+				}
+				else
+				{
+					$files = array_merge($files,$this->getZipFileList($item,false,false,$createOnPath,"",$exclude_extension,$exclude_file,$exclude_dir));
+				}				
+			}
+			
 		}		
-	
-
+		elseif($this->type == "dir")
+		{			
+			$files = $this->getZipFileList($this->path,$recursive,$includeSelfFolder,$createOnPath,$this->path,$exclude_extension,$exclude_file,$exclude_dir);		
+		}
+		elseif($this->type == "file")
+		{
+			$files = $this->getZipFileList($this->path,false,false,$createOnPath,"",$exclude_extension,$exclude_file,$exclude_dir);
+		}		
 		
-		
-		if(count($files)>0)
+		if(count($files) > 0)
 		{
 			$zip = new ZipArchive;
 			if ($zip->open($zipName, $flags) === true)
 			{
 				foreach($files as $file)
-				{
-					
+				{					
 					if($file["type"] == "file")
 					{
-						$zip->addFile($file["fullpath"],$file["ZipFilePath"]);
+						$zip->addFile($file["fullpath"],$file["zipFilePath"]);
 					}
 					else
-					{
-						
+					{						
 						if($includeEmptyFolders)
 						{							
-							$zip->addEmptyDir ($file["ZipFilePath"]);	
+							$zip->addEmptyDir ($file["zipFilePath"]);	
 						}						
 					}
 				}
+				$zip->close();
+			}
+			
+		}
+		
+	}
+	
+	
+	
+	
+	/**
+	 * list the files and directories inside a zip file
+	 *
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
+	 * @access public
+	 * @return array
+	 */
+	public function zipListing($exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
+	{	
+		// Lowercase excluded arrays
+		$exclude_extension = array_map("strtolower", $exclude_extension);
+		$exclude_file = array_map("strtolower", $exclude_file);
+		$exclude_dir = array_map("strtolower", $exclude_dir);
+		
+		$list = array();
+		
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{
+			for( $i = 0; $i < $zip->numFiles; $i++ )
+			{ 
+				$file = $zip->statIndex( $i ); 
+				$filePath = $file['name'];
+					
+				$extension="";	
+				$ruteParts = pathinfo($filePath);
+
+				if (array_key_exists("extension",$ruteParts))
+				{
+					$extension = strtolower($ruteParts['extension']);
+				}	
+			
+			
+				// omit extension excluded
+				if(in_array($extension, $exclude_extension)){ continue;}
+				
+				
+				//
+				if($extension == "" && substr($filePath, -1) == "/"){
+					if(!in_array(strtolower($ruteParts["basename"]), $exclude_dir)){
+						$file["type"] = "dir";	
+						$file["comment"] = $zip->getCommentIndex($i);
+						$list[] = $file;
+					}
+				}else{
+					if(!in_array(strtolower($ruteParts["basename"]), $exclude_file)){
+						$file["type"] = "file";
+						$file["comment"] = $zip->getCommentIndex($i);
+						$list[] = $file;
+					}
+				}				
+				
+				
+
+			}
+			$zip->close();
+		} 
+		
+		return $list;
+		
+	}
+	
+	public function zipSimpleListing($exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
+	{	
+		// Lowercase excluded arrays
+		$exclude_extension = array_map("strtolower", $exclude_extension);
+		$exclude_file = array_map("strtolower", $exclude_file);
+		$exclude_dir = array_map("strtolower", $exclude_dir);
+		
+		$list = array();
+		
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{
+			for( $i = 0; $i < $zip->numFiles; $i++ )
+			{ 
+				$file = $zip->statIndex( $i ); 		
+				$list[] = $file['name'];
+			}
+			$zip->close();
+		} 
+		
+		return $list;
+		
+	}
+	
+	
+	
+	/**
+	 * return an array with the information of the file inside the zip, false if no found
+	 *
+	 * @param mixed $file
+	 * @access public
+	 * @return mixed
+	 */
+	public function getZiFileInfo($file)
+	{	
+
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{
+			$info = array();
+			
+			if(is_string($file))
+			{				
+				$info = $zip->statName($file);
+			}
+			elseif(is_numeric($file))
+			{
+				$info = $zip->statIndex($file);
+			}			
+			
+			
+			if($info == false)
+			{
+				//in the case of directories, sometimes not found in the zip file, but exist
+				if(substr($file, -1) == "/") //if is dir try to get the information
+				{
+					$info = array();
+					$info["name"] = $file;
+					$info["type"] = "dir";
+				}
+				
+				return $info;
+			}
+				
+			if(substr($info["name"], -1) == "/") //if is dir
+			{
+				$info["type"] = "dir";	
+			}
+			else
+			{
+				$info["type"] = "file";
 			}
 
+			$info["comment"] = $zip->getCommentIndex($info["index"]);
+
+			
+			return $info;
+			
+			$zip->close();
+		} 
+		
+		
+		
+	}
+	
+	
+	
+	
+	/**
+	 * delete a list of files inside the zip, if is directory it deletes recursively
+	 *
+	 * @param mixed $file
+	 * @access public
+	 * @return void
+	 */
+	public function zipDelete($files = array())
+	{	
+		
+		$files = $this->normalizeFilesList($files);
+		
+		
+		// every time is deleted a files the indexes in the zip change
+		// by this reason first get the info of every file and after delete by name, to avoid delete by index in a moved indexes
+		foreach($files as &$file)
+		{
+			$file = $this->getZiFileInfo($file);// get the info of files by name or index
+		}
+		
+		$zip = new ZipArchive;
+		
+		if ($zip->open($this->path) === TRUE) 
+		{			
+			foreach($files as &$file)
+			{								
+				if($file == false){continue;}
+				
+				$zip->deleteName($file["name"]);
+
+				if($file["type"] == "dir")
+				{
+					$zipFiles = $this->zipListing();
+					foreach($zipFiles as $f)
+					{
+						if(substr($f["name"], 0, strlen($file["name"])) == $file["name"]) // if begins whit the dir name
+						{
+							$zip->deleteName($f["name"]);
+						}
+					}					
+				}
+
+			}
+			
+			$zip->close();			
+		}
+	}
+	
+	/**
+	 * Add files to an existing zip with the file or directory path set, or define list of files or directories to add
+	 *
+	 * 
+	 * @param string $zipName	 
+	 * @param bool $recursive
+	 * @param bool $includeSelfFolder
+	 * @param bool $includeEmptyFolders
+	 * @param string $addOnPath
+	 * @param mixed $fromFiles
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
+	 * @access public
+	 * @return void
+	 */
+	public function zipAdd($zipName = "",$recursive = true,$includeSelfFolder = false,$includeEmptyFolders= true, $addOnPath = "",$fromFiles= null, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
+	{
+		// just change the $overwrite param to false for adding files
+		$this->zipCreate($zipName,false,$recursive,$includeSelfFolder,$includeEmptyFolders,$addOnPath,$fromFiles,$exclude_extension,$exclude_file,$exclude_dir);
+		
+	}
+	
+	/**
+	 * add comment to the entire zip file or each individual file
+	 *
+	 * @param string $archiveComment
+	 * @param mixed $files
+	 * @access public
+	 * @return string
+	 */
+	public function setZipComment($archiveComment = "",$files = array())
+	{
+		
+		
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{
+			if($archiveComment != "")
+			{
+				$zip->setArchiveComment($archiveComment);
+			}
+			
+			
+			
+			foreach($files as $file=>$comment)
+			{	
+				$file = $this->getZiFileInfo($file);
+				if(!$file){return;}
+				
+				if(is_string($comment))
+				{
+					$zip->setCommentIndex($file["index"],$comment);
+				}
+			}
+			$zip->close();
+		}
+	}
+	
+	/**
+	 * return the comment to the entire zip
+	 *
+	 * @access public
+	 * @return string
+	 */
+	public function getZipComment()
+	{		
+		$comment ="";
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{
+			$comment = $zip->getArchiveComment();
+			$zip->close();
+		}
+		return $comment;
+	}
+	
+	
+	/**
+	 * Read and return the content of file inside a zip
+	 * 
+	 * @access public
+	 * @param mixed file
+	 * @return string
+	 */
+	public function zipRead($file = "")
+	{
+		if($file == ""){return;}		
+		
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{			
+			$file = $this->getZiFileInfo($file);
+			if($file!= false)
+			{
+				return $zip->getFromName($file["name"]);
+			}			
+			
+			$zip->close();
+		}
+		return "";
+	}
+	
+	/**
+	 * Write string content to file inside a zip, creates the file if not exist
+	 * 
+	 * @access public
+	 * @param mixed file
+	 * @param string $contents
+	 * @param bool $overwrite
+	 * @return string
+	 */
+	public function zipWrite($file = "",$content ="",$overwrite=false)
+	{
+		
+		if($file == "" || $content == ""){return;}
+		
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE)
+		{
+			
+			$fileInfo = $this->getZiFileInfo($file);
+			if($fileInfo != false)
+			{				
+				if($overwrite == false)
+				{
+					$content = $this->zipRead($fileInfo["name"]) . $content;
+				}
+
+				$zip->addFromString($fileInfo["name"], $content);
+			}
+			else
+			{
+				$zip->addFromString($file, $content);
+			}
+			
+
+			
+			$zip->close();
+		}
+		return $content;
+	}
+	
+	
+	/**
+	 * extract the content of the entire zip file, or a list of files / directories
+	 *
+	 * @param string $destination
+	 * @param mixed $files
+	 * @access public
+	 * @return bool
+	 */
+	public function zipExtract($destination  = "",$files = null)
+	{			
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE)
+		{	
+			if($files != null)
+			{				
+				$files = $this->normalizeFilesList($files);
+				
+				$filesToExtract = array();
+				$zipFiles = $this->zipListing();
+				
+	
+					foreach($files as $file)
+					{
+						
+						$file = $this->getZiFileInfo($file);
+						if($file == false){continue;}
+						
+						if($file["type"] == "dir")
+						{
+							foreach($zipFiles as $f)
+							{	
+								if(substr($f["name"], 0, strlen($file["name"])) == $file["name"]) // if begins whit the dir name
+								{
+									$filesToExtract[] = $f["name"];
+								}
+							}							
+						}
+						else
+						{
+							$filesToExtract[] = $file["name"];
+						}
+					}
+
+				$filesToExtract = array_unique($filesToExtract);
+				
+				$zip->extractTo($destination,$filesToExtract);
+				
+			}
+			else
+			{
+				$zip->extractTo($destination);
+			}
+			
+			$zip->close();
+		}
+		return;
+		
+	}
+	
+	/**
+	 * copy a list of files to other path in the same zip and if is defined can copy to another zip file also
+	 *
+	 * @access public
+	 * @return bool
+	 */
+	public function zipCopy($files = null,$destination = "",$otherZipFile = "")
+	{		
+		$files = $this->normalizeFilesList($files);
+		
+		$this->zipExtract($this->tempDir,$files);
+		
+		$fdh = new fileDirHandler($this->tempDir);
+		if($otherZipFile == "")
+		{
+			$fdh->zipAdd($this->path,true,false,true,$destination);		
+		}
+		else
+		{
+			if(is_file($otherZipFile))
+			{
+				$fdh->zipAdd($otherZipFile,true,false,true,$destination);
+			}
+		}		
+		
+		$fdh->SetPath($this->tempDir);
+		$fdh->Delete();		
+	}
+	
+	
+	/**
+	 * Zip file or directory
+	 *
+	 * @param mixed $files
+	 * @param string $destination
+	 * @param string $otherZipFile
+	 * @access public
+	 * @return bool
+	 */
+	public function zipMove($files = null,$destination = "",$otherZipFile = "")
+	{	
+		$files = $this->normalizeFilesList($files);
+		
+		if($destination != "")
+		{
+			$destination = $this->fixPath($destination)."/";
+		}
+		
+		// move to other zip file and delete the files in this one
+		if($otherZipFile != "")
+		{
+			if(is_file($otherZipFile))
+			{
+				$this->zipCopy($files, $destination,$otherZipFile);
+				$this->zipDelete($files);
+			}
+			return;
+		}
+		
+		
+		//rename the files to move in the same zipfile
+		$zip = new ZipArchive;
+		if ($zip->open($this->path) === TRUE) 
+		{			
+			
+			foreach($files as $file)
+			{	
+				
+				$file = $this->getZiFileInfo($file);
+				if(!$file){continue;}
+				
+				if($file["type"] == "dir")
+				{
+					$ruteParts = pathinfo($file["name"]);
+					$newPath = $destination.$ruteParts['basename']."/";
+
+					$zip->renameName($file["name"],$newPath);
+
+					$zipFiles = $this->zipListing();
+					foreach($zipFiles as $f)
+					{
+						if(substr($f["name"], 0, strlen($file["name"])) == $file["name"]) // if begins whit the dir name
+						{
+
+							$pathToReplace = '/'.preg_quote($file["name"], '/').'/';// change "old dir name" from "file Path" to a "new file Path"
+							$newFilePath = preg_replace($pathToReplace,$newPath ,$f["name"],1);
+
+							$zip->renameName($f["name"],$newFilePath);
+						}
+					}
+					
+				}
+				else
+				{
+					$ruteParts = pathinfo($file["name"]);
+					$newPath = $destination.$ruteParts['basename'];
+
+					$zip->renameName($file["name"],$newPath);						
+				}
+				
+			}
 			$zip->close();
 		}
 		
+	}
+	
+	
 
-		
-		
-	}
 	
-	
-	
-	
-	/**
-	 * Zip file or directory
-	 *
-	 * @access public
-	 * @return bool
-	 */
-	public function zipListing($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir="")
-	{	
-		$zip = new ZipArchive;
-		if ($zip->open($this->path) === TRUE) {
-			for( $i = 0; $i < $zip->numFiles; $i++ ){ 
-				$stat = $zip->statIndex( $i ); 
-				echo   $stat['name'] . "<br>"; 
-			}
-		} 
-		
-	}
-	
-	
-	
-	/**
-	 * Zip file or directory
-	 *
-	 * @access public
-	 * @return bool
-	 */
-	public function zipDelete($files = null)
-	{
 
-		
-	}
 	
-	/**
-	 * Zip file or directory
-	 *
-	 * @access public
-	 * @return bool
-	 */
-	public function zipCopy($files = null,$zipFile = "",$newPath = "")
-	{		
-		
-	}
-	
-	/**
-	 * Zip file or directory
-	 *
-	 * @access public
-	 * @return bool
-	 */
-	public function zipMove($files = null,$zipFile = "",$newPath = "")
-	{		
-		
-	}
 
-	/**
-	 * Zip file or directory
-	 *
-	 * @access public
-	 * @return bool
-	 */
-	public function zipExtract($files = null,$extractionPath = "")
-	{		
-		
-	}
+
+
 	
 }
-
-
-
-// extra:
-
-//find file
-// rename
- //zip coments
 
 
 
@@ -1614,15 +2195,25 @@ $fdh->SetPath("Red/Hot/Chilli/Peppers/readme.txt");
 
 Write to a file
 
-fileDirHandler
-If want to write text to a file.
+
+If want to create and write text to a file.
+if the path doesn't exist it will be created
 
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/readme.txt");
-$fdh->Write('hello world');
+$fdh->Write('hello world');// create if not exist
+
+$fdh->Write('overwrite hello world',true);//overwrite previous content
+
+$fdh->Write(', hello again');//add this content
+
+parameters
+1. string contents: text to write in file
+2. bool overwrite:  defines if content is for add or rewrite the file (default false)
+
 
 
 Read text from a file
-you can get all text content from a file.
+you can get all content from a file.
 
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/readme.txt");
 $content = $fdh->Read(); 
@@ -1630,74 +2221,110 @@ echo nl2br($content);
 
 
 Create directory or file
+You can create directories and files, with this method you also creates the parent directories if they doesn't exist.
 
-You can create directories and files. With this method you also creates the parent directories if they doesn't exist.
-
-2 parameters:
-
-1- create directory (default false)
-2- overwrite, overwrite file or if exist (default false)
+parameters
+1- bool overwrite: overwrite file if exist (default false)
 
 
 //Create directory
-$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/new");
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/");
+$fdh->Create();
+
+//Create file
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
+$fdh->Create();
+
+
+//overwrite file if exist
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
 $fdh->Create(true);
-
-//Create file
-$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
-$fdh->Create();
-
-
-//Create file
-$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
-$fdh->Create();
-
-//overwrite file exist
-$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
-$fdh->Create(false,true);
 
 
 Delete directory or file
-
 be careful about permissions, if not the file or folder can't be deleted.
 
+parameters
+1. bool onlyFilesInsideDir: if true delete only the files and directories not the folder itself  (default false)
+
+// delete a file
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
 $fdh->Delete();
 
+// delete folder "Peppers" and its content
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/");
+$fdh->Delete();
+
+// only delete the content of "Peppers" keeping the folder "Peppers"
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/");
+$fdh->Delete(true);
+
+
 
 Copy
-Copy a directory or file. 
-has one parameter and that's the directory and filename to where you want to copy the file.
-in the case of copy an entire directory the parameter is the destination directory.
 
-the destination directory must exist
+copies the entire directory or file to other destination
+if destination directory not exist is created
 
+
+parameters
+1. string destination: the path where we going to copy the files
+2. bool includeSelfFolder: if true creates the folder and content in the destination, otherwise only the files inside the folder will be copied (default false)
+
+copy file
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
-$fdh->Copy("Red/Hot/Chilli/Peppers/new/Californication2.txt");
+$fdh->Copy("Red/Hot/Chilli/Peppers/new/Californication2.txt"); //also renames the file
 
+copy directory
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Parallel universe/");
 $fdh->Copy("Red/Hot/Chilli/Peppers/new/");
 
+copy file in directory
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
+$fdh->Copy("Red/Hot/"); 
+
+
+
 Move
 
-similar to copy, but in this case the files are moved to the new destination
+Similar to copy, but in this case the files are moved to the new destination
 and can also use this function as directory an file renamer.
+if destination directory not exist is created.
+
+parameters
+1. string destination: the path where we going to move the files
+2. bool includeSelfFolder: if true creates the folder and content in the destination, otherwise only the files inside the folder will be copied (default false)
 
 
+move file in a new directory with same name
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
 $fdh->move("Red/Hot/Chilli/Peppers/new/x.txt");
 
+move file and rename
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/Californication.txt");
+$fdh->move("Red/Hot/Chilli/Peppers/new/");
 
-Listing
+move only the files inside the directory
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/");
+$fdh->move("Red/Hot/Chilli/Peppers/new/");
+
+move the folder and the files inside the directory
+$fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/");
+$fdh->move("Red/Hot/Chilli/Peppers/new/",true);
+
+
+
+listDir
 
 If directory is selected the method returns a list of files and directories that are inside the directory. 
 
-4 optitional parameters:
+optitional parameters:
 
-Excluded extensions: Array of extension that you want to exclude from the result. For example array("jpg")
-Excluded files: Array of files that you want to exclude from the result. For example array("Thumb.db")
-Exclude directories: Array of directories you want to exclude from the result. For example array("backup", "temp")
-Recursive: Set to true if you also want to list the content of subdirectories
+1. Recursive: Set to true if you also want to list the content of all subdirectories
+2. Excluded extensions: Array of extension that you want to exclude from the result. For example array("jpg")
+3. Excluded files: Array of files that you want to exclude from the result. For example array("Thumb.db")
+4. Exclude directories: Array of directories you want to exclude from the result. For example array("backup", "temp")
+
 
 the array returned contains an associative array with the file information:
 
@@ -1723,13 +2350,35 @@ in the case of directory:
         )
 
 $fdh = new fileDirHandler("music/");
-$array = $fdh->Listing(); 
+$array = $fdh->listDir(); 
 print "<pre>";
 print_r($array);
 print "</pre>";
 
 
+simpleListDir
+
+Equal than "listDir" metod returns a numeric array of files and directories that are inside the directory.
+the array returned contains a list with the paths:
+
+Array
+(
+    [0] => music/01 - Under the bridge.mp3
+    [1] => music/02 - Give it away.mp3
+    [2] => music/03 - Californication.mp3
+    [16] => music/folder
+)
+
+$fdh = new fileDirHandler("music/");
+$array = $fdh->simpleListDir(); 
+print "<pre>";
+print_r($array);
+print "</pre>";
+
+
+
 getPath
+
 this function return the selected path in the object
 
 $fdh = new fileDirHandler("music/Universally speaking.mp3");
@@ -1767,65 +2416,374 @@ echo fileDirHandler::getMimeType("By the way.mp3");
 //returns "audio/mpeg"
 
 
-*/
 
 
 
-/*$zip = new ZipArchive;
-if ($zip->open('test_new.zip', ZipArchive::CREATE) === TRUE)
-{
-    // Add files to the zip file
-    $zip->addFile('test.txt');
-    $zip->addFile('image.png');
- 
-    // Add random.txt file to zip and rename it to newfile.txt
-    $zip->addFile('image.png', 'Newimage.png');
- 
-    // Add a file new.txt file to zip using the text specified
-    $zip->addFromString('new.txt', 'text to be added to the new.txt file');
- 
-    // All files are added, so close the zip file.
-    $zip->close();
-}*/
 
-/*
-$fdh = new fileDirHandler("recursive/algo/");
-$fdh->zipCreate("file.zip",true,true);
+zip functions
 
-*/
-//$fdh = new fileDirHandler("recursive/algo/");
-//$fdh = new fileDirHandler("image.png");
 
-$filesStr = "test.txt,image.png,class.logApp.php,class.fileDirHandler.php,recursive/algo,noFile.txt";
 
+zipCreate
+
+creates a zip file with the directory or files selected.
+if not exist its created, it can also use exclude arrays to omit some files or directories.
+also can receive a list of files to create the zip with them
+
+
+
+parameters:
+
+1. zipName: the name of the zip we attempt to create
+2. overwrite: if the zip file exist will be overwritten for a new one otherwise the files wil be added (default false)
+3. recursive: Set to true if you also want to list the content of all subdirectories (default true)
+4. includeSelfFolder: if true creates the folder and content in the zip, otherwise only the files inside the folder will be added in destination zip (default false)
+5. includeEmptyFolders: if true creates all the directories in the zip not matter if are empty (default true)
+6. createOnPath: is a string path, if is defined the files will be added to this location on the zip file
+7. fromFiles: is a list of files or directories, if is defined the function only take this files for adding.
+
+Excluded options:
+8. Excluded extensions: Array of extension that you want to exclude from the result. For example array("jpg")
+9. Excluded files: Array of files that you want to exclude from the result. For example array("Thumb.db")
+10. Exclude directories: Array of directories you want to exclude from the result. For example array("backup", "temp")
+
+
+note: for "fromFiles" parameter the directories must end with "/" also applies for al zip functions
+
+examples: 
+
+//in this case, the zip include empty folders, and all content including subdirectories,if the zip file exist the files wil be added
+//creates a zip with the content of the files in folder "music/"
+$fdh = new fileDirHandler("music/");
+$fdh->zipCreate("test.zip");
+
+//to create a folder inside
+//creates a zip with the content of the files in folder "music/"
+$fdh = new fileDirHandler("music/");
+$fdh->zipCreate("test.zip");
+
+// in this case the files is overwritten by new one
+$fdh = new fileDirHandler("image.png");
+$fdh->zipCreate("test.zip",true);
+
+// in this case we going to include in the zip the folder "music" and inside the files
+$fdh = new fileDirHandler("music/");
+$fdh->zipCreate("test.zip",true,true,true);
+
+// in this case we going to add all files inside tge folder "new" e.g.: "new/music/Otherside.mp3"
+$fdh = new fileDirHandler("music/");
+$fdh->zipCreate("test.zip",true,true,true,true,"new");
+
+// in this case we going to add just 2 files and one directory with his content
+$fdh = new fileDirHandler("music/");
+
+//the files can be a string comma separated
+$files = "image.png,music/Give it away.mp3,new/music/folder/";
+
+//the files can be an array
 $files = array();
-$files[] = "test.txt";
 $files[] = "image.png";
-$files[] = "class.logApp.php";
-$files[] = "class.fileDirHandler.php";
-$files[] = "recursive/algo";
-$files[] = "noFile.txt";
+$files[] = "music/Give it away.mp3";
+$files[] = "new/music/folder/";
+
+$fdh->zipCreate("test.zip",true,true,true,true,"",$files);
+
+
+// in this case we going to exclude the files with extensions mp3 and jpg
+$fdh = new fileDirHandler("music/");
+$fdh->zipCreate("test.zip",true,true,true,true,"new",null,["mp3","jpg"]);
 
 
 
-//$fdh->makeFileList($filesStr);
-//$fdh->makeFileList($files,true);
-//$fdh->makeFileList($fdh->Listing(true),false,false,"rafa",$fdh->getPath());
-	
-//$fdh->zipCreate("prueba.zip",true,true,true);
 
-//$fdh->zipCreate("pruebax.zip",true,true,true,"rafa");
-	
-//$fdh->zipCreate("pruebax.zip",true,true,true,"rafa",$filesStr);
-//$fdh->zipCreate("pruebax.zip",true,true,true,"rafa",$files);
-//$fdh->zipCreate("pruebax.zip",true,true,true,true,"rafa",$fdh->Listing(false));
-/*$fdh = new fileDirHandler("pruebax.zip");
-$fdh->zipListing();*/
+zipListing
+
+this function reads all the entries in the zip file and returns an array of all files with information about it.
+the useful data are:
+
+name: full path of file in the zip
+index: number of the file in the zip (be careful to use them, because it change if modify some file in zip)
+type: can be "dir" or "file"
+comment: the internal comment for this file
 
 
-foreach (glob("t*t") as $nombre_fichero) {
-    echo "Tamaño de $nombre_fichero " . filesize($nombre_fichero) . "<br>";
+optitional parameters:
+
+1. Excluded extensions: Array of extension that you want to exclude from the result. For example array("jpg")
+2. Excluded files: Array of files that you want to exclude from the result. For example array("Thumb.db")
+3. Exclude directories: Array of directories you want to exclude from the result. For example array("backup", "temp")
+
+
+$fdh = new fileDirHandler("test.zip");
+print "<pre>";
+var_dump($fdh->zipListing() );
+print "</pre>";
+
+  [0]=>
+  array(10) {
+    ["name"]=> string(10) "new/music/"
+    ["index"]=> int(0)
+	["crc"]=> int(0)
+	["size"]=> int(0)
+    ["mtime"]=> int(1549086096)
+	["comp_size"]=> int(0)
+    ["comp_method"]=> int(0)
+    ["encryption_method"]=> int(0)
+    ["type"]=> string(3) "dir"
+	["comment"]=> string(0) ""
+  }
+
+
+
+zipSimpleListing
+
+Equal to zipListing, but it returns just a numeric array with te paths of files inside the zip.
+
+$fdh = new fileDirHandler("test.zip");
+print "<pre>";
+var_dump($fdh->zipSimpleListing() );
+print "</pre>";
+
+
+array(3) {
+  [0]=>  string(10) "new/music/"
+  [1]=>  string(17) "new/music/folder/"
+  [2]=>  string(27) "new/music/folder/readme.txt"
 }
 
+getZiFileInfo
 
-var_dump(glob("*"));
+return an array with the information of the file inside the zip, false if no found.
+its useful for know if file exist in the zip or for get some data about the file, like a comment or so
+
+parameters:
+
+1. file: it can be the the path or the index in the zip file
+
+
+$fdh = new fileDirHandler("test.zip");
+print "<pre>";
+var_dump($fdh->getZiFileInfo(0) );
+var_dump($fdh->getZiFileInfo("new/music/folder/readme.txt") );
+print "</pre>";
+
+
+
+zipDelete
+
+
+Erase files and directories recursively inside the zip
+
+
+parameters:
+
+1. files: a list of paths. it can be the the path or the index of the file or directory
+
+
+in this example we delete some files, the list can be in diferents ways
+
+$fdh = new fileDirHandler("test.zip");
+
+$files = "new/music/ , new/music/folder/ , new/music/folder/readme.txt";
+
+//or
+
+$files = "0,1,2 ";
+
+//or
+
+$files = "new/music/ , 1 , new/music/folder/readme.txt";
+
+//or
+
+$files = array();
+$files[] = 0;
+$files[] = "new/music/folder/";
+$files[] = 2;
+
+//or
+
+$files = $fdh->zipListing();// in this case we list all files in the zip, if we delete all files, the zip file "test.zip" is erased too
+
+$fdh->zipDelete($files); 
+
+
+
+
+zipAdd
+
+Add files to an existing zip, is a shorcut to zipCreate with parameter "overwrite = false", 
+if the zip file not exist will be created
+
+
+1. zipName: the name of the zip we attempt to create
+2. overwrite: if the zip file exist will be overwritten for a new one otherwise the files wil be added (default false)
+3. recursive: Set to true if you also want to list the content of all subdirectories (default true)
+4. includeSelfFolder: if true creates the folder and content in the zip, otherwise only the files inside the folder will be added in destination zip (default false)
+5. includeEmptyFolders: if true creates all the directories in the zip not matter if are empty (default true)
+6. createOnPath: is a string path, if is defined the files will be added to this location on the zip file
+7. fromFiles: is a list of files or directories, if is defined the function only take this files for adding.
+
+Excluded options:
+8. Excluded extensions: Array of extension that you want to exclude from the result. For example array("jpg")
+9. Excluded files: Array of files that you want to exclude from the result. For example array("Thumb.db")
+10. Exclude directories: Array of directories you want to exclude from the result. For example array("backup", "temp")
+
+
+
+//in this case, the zip include empty folders, and all content including subdirectories
+//creates a zip with the content of the files in folder "music/"
+$fdh = new fileDirHandler("music/");
+$fdh->zipCreate("test.zip");
+
+
+
+setZipComment
+
+Saves a comment for the zip file, and also can make comments for an individual files or directories inside.
+to see the comments in every file use the function "zipListing", for the general comment use "getZipComment"
+
+parameters:
+
+1. archiveComment: is the general comment in the file
+2. files: is associative array with the file path and comment e.g $arr["filePath"] = "comment";
+
+
+$fdh = new fileDirHandler("test.zip");
+
+$filesComments = array();
+$filesComments["new/music/"] = "root directory";
+$filesComments["new/music/folder/"] = "info folder";
+$filesComments["new/music/folder/readme.txt"] = "you must read it!!";
+
+$fdh->setZipComment("Zip File comment",$filesComments);
+
+print "<pre>";
+var_dump($fdh->getZipComment() );
+var_dump($fdh->zipListing() );
+print "</pre>";
+
+
+
+
+getZipComment
+
+gets the general comment in the zip
+
+
+$fdh = new fileDirHandler("test.zip");
+echo($fdh->getZipComment() );
+
+
+
+zipRead
+
+
+Read and return the content of file inside a zip
+
+parameters:
+
+1. file: the path of file or index inside the zip
+
+$fdh = new fileDirHandler("test.zip");
+echo( $fdh->zipRead("new/music/folder/readme.txt") );
+//or
+echo( $fdh->zipRead(2) );
+
+
+
+zipWrite
+
+Write string content to file inside a zip, creates the file if not exist
+
+parameters:
+
+1. file: the path of file or index inside the zip
+2. content: text to Write in the file
+3. overwrite: if true replace the content with new one otherwise adds the text into the file (default false)
+
+
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipWrite("new/music/folder/readme.txt","hello ");
+//or
+$fdh->zipWrite(2,"hello ");
+
+$fdh->zipWrite("new/music/folder/readme.txt","overwritten",true);
+
+echo($fdh->zipRead("new/music/folder/readme.txt"));
+
+
+
+
+
+
+zipExtract
+
+Extract the content of the entire zip file, or a list of files / directories
+
+
+parameters:
+
+1. destination: the path in the file system where the files will be extracted
+2. files: optional list of paths to extract. it can be the the path or the index of the file or directory in the zip
+
+// extract all files
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipExtract("extract to here/other/and other/");
+
+
+// extract a list of files
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipExtract("extract to here/","new/music/,readme.txt,image.png");
+
+
+
+
+zipCopy
+
+copy a list of files to other path in the same zip and if is defined this function can copy the files to another zip file also
+
+parameters:
+
+1. files: list of paths. it can be the the path or the index of the file or directory in the zip
+2. destination: the path in the zip where the files going to be copied
+3. otherZipFile: if is defined and exist the copied files are added to "otherZipFile"
+
+//copy files in the same zip
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipCopy("readme.txt","copied/");
+
+//copy files in other file zip
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipCopy("new/music/ , readme.txt , image.png","copied/","nunevoZip.zip");
+
+
+
+zipMove
+
+move a list of files to other path in the same zip and if is defined this function can move the files to another zip file also
+
+parameters:
+
+1. files: list of paths. it can be the the path or the index of the file or directory in the zip
+2. destination: the path in the zip where the files going to be copied
+3. otherZipFile: if is defined and exist the copied files are added to "otherZipFile"
+
+//move files in the same zip
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipMove("readme.txt","copied/");
+
+//move files in other file zip
+$fdh = new fileDirHandler("test.zip");
+$fdh->zipMove("new/music/ , readme.txt , image.png","copied/","nunevoZip.zip");
+
+
+
+
+
+
+
+*/
+
+
+
