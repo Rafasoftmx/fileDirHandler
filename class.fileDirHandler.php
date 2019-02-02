@@ -19,7 +19,7 @@
                                                                             
 
 * Simple class to handle some useful functions for directory, file and zip compression
-
+* see examples at the end of this file
 
 */
 require 'kint.phar';
