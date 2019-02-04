@@ -17,6 +17,12 @@ $fdh->SetPath("Red/Hot/Chilli/Peppers/readme.txt");
 
 If want to create and write text to a file.
 if the path doesn't exist it will be created
+
+parameters
+1. string **contents**: text to write in file
+2. bool **overwrite**:  defines if content is for add or rewrite the file (default false)
+
+
 ```
 $fdh = new fileDirHandler("Red/Hot/Chilli/Peppers/readme.txt");
 $fdh->Write('hello world');// create if not exist
@@ -25,9 +31,6 @@ $fdh->Write('overwrite hello world',true);//overwrite previous content
 
 $fdh->Write(', hello again');//add this content
 ```
-parameters
-1. string **contents**: text to write in file
-2. bool **overwrite**:  defines if content is for add or rewrite the file (default false)
 
 
 ##  Read text from a file
@@ -42,7 +45,7 @@ echo nl2br($content);
 You can create directories and files, with this method you also creates the parent directories if they doesn't exist.
 
 parameters
-1- bool **overwrite**: overwrite file if exist (default false)
+1. bool **overwrite**: overwrite file if exist (default false)
 
 ```
 //Create directory
@@ -209,9 +212,10 @@ print "</pre>";
 
 this function return the selected path in the object
 
+```
 $fdh = new fileDirHandler("music/Universally speaking.mp3");
 echo $fdh->getPath();
-
+```
 
 once you have set the path can access to some properties:
 
@@ -269,7 +273,7 @@ parameters:
 6. **createOnPath**: is a string path, if is defined the files will be added to this location on the zip file
 7. **fromFiles**: is a list of files or directories, if is defined the function only take this files for adding.
 
-Excluded options:
+### Excluded options:
 8. **Excluded extensions**: Array of extension that you want to exclude from the result. For example array("jpg")
 9. **Excluded files**: Array of files that you want to exclude from the result. For example array("Thumb.db")
 10. **Exclude directories**: Array of directories you want to exclude from the result. For example array("backup", "temp")
@@ -277,15 +281,10 @@ Excluded options:
 
 **note**: for "fromFiles" parameter the directories must end with "/" also applies for al zip functions
 
-examples:
+**examples:**
+
 ```
 //in this case, the zip include empty folders, and all content including subdirectories,if the zip file exist the files wil be added
-//creates a zip with the content of the files in folder "music/"
-$fdh = new fileDirHandler("music/");
-$fdh->zipCreate("test.zip");
-```
-```
-//to create a folder inside
 //creates a zip with the content of the files in folder "music/"
 $fdh = new fileDirHandler("music/");
 $fdh->zipCreate("test.zip");
@@ -334,13 +333,13 @@ $fdh->zipCreate("test.zip",true,true,true,true,"new",null,["mp3","jpg"]);
 this function reads all the entries in the zip file and returns an array of all files with information about it.
 the useful data are:
 
-**name**: full path of file in the zip
-**index**: number of the file in the zip (be careful to use them, because it change if modify some file in zip)
-**type**: can be "dir" or "file"
-**comment**: the internal comment for this file
+- **name**: full path of file in the zip
+- **index**: number of the file in the zip (be careful to use them, because it change if modify some file in zip)
+- **type**: can be "dir" or "file"
+- **comment**: the internal comment for this file
 
 
-optitional parameters:
+### optitional parameters:
 1. **Excluded extensions**: Array of extension that you want to exclude from the result. For example array("jpg")
 2. **Excluded files**: Array of files that you want to exclude from the result. For example array("Thumb.db")
 3. **Exclude directories**: Array of directories you want to exclude from the result. For example array("backup", "temp")
@@ -450,7 +449,7 @@ if the zip file not exist will be created
 6. **createOnPath**: is a string path, if is defined the files will be added to this location on the zip file
 7. **fromFiles**: is a list of files or directories, if is defined the function only take this files for adding.
 
-Excluded options:
+### Excluded options:
 8. **Excluded extensions**: Array of extension that you want to exclude from the result. For example array("jpg")
 9. **Excluded files**: Array of files that you want to exclude from the result. For example array("Thumb.db")
 10. **Exclude directories**: Array of directories you want to exclude from the result. For example array("backup", "temp")
