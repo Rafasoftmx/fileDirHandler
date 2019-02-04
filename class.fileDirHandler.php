@@ -22,7 +22,7 @@
 * see examples at the end of this file
 
 */
-require 'kint.phar';
+
 
 class fileDirHandler
 {
