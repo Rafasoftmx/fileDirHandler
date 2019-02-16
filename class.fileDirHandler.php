@@ -18,7 +18,9 @@
                                                                
                                                                             
 
-* Simple class to handle some useful functions for directory, file and zip compression
+* Simple class to handle some useful functions for directory or files and zip compression
+* get info of files, like mimetype, copy, move, create files an directories, 
+* add complete folders to a Zip file, extract, copy, rename, create even in a two differents  zip files
 * see examples at the end of this file
 
 */
