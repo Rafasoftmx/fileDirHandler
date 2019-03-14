@@ -45,7 +45,7 @@ class fileDirHandler
 	public $type = ""; //type of path directory or file ("dir" or "file")
 	public $exist = false; // if the file or directory exist in the file system
 	
-	public $tempDir = "fileDirHandler_temp"; // temp directory for some aip functions of the class, is created and deleted when is used 
+	public $tempDir = "fileDirHandler_temp"; // temp directory for some zip functions of the class, is created and deleted when is used 
 
 	
 	/**
@@ -55,7 +55,8 @@ class fileDirHandler
 	 * @return void
 	 * @param string $path
 	 */
-	public function __construct($path = ""){
+	public function __construct($path = "")
+	{
 		$this->SetPath($path);		
 	}	
 	
@@ -87,7 +88,8 @@ class fileDirHandler
 	 * @return void
 	 * @param array $arr
 	 */
-	private function is_arrayListFiles($arr){
+	private function is_arrayListFiles($arr)
+	{
 		if(is_array($arr))
 		{
 			if(count($arr)>0)
@@ -123,7 +125,8 @@ class fileDirHandler
 	 * @param string $val_2
 	 * @return int
 	 */
-	private function lengthSort($val_1, $val_2){
+	private function lengthSort($val_1, $val_2)
+	{
 
 		// initialize the return value to zero 
 		$retVal = 0;
@@ -168,13 +171,14 @@ class fileDirHandler
 	 * @access public
 	 * @return string
 	 */
-	public function getPath(){
+	public function getPath()
+	{
 		return $this->path;
 	}
 
 
 	/**
-	 * Set the pointing route in the file system and get some properties  for the class 
+	 * Sets the pointing route in the file system and sets some properties in the class
 	 *
 	 * @access public
 	 * @param string $path
@@ -182,7 +186,8 @@ class fileDirHandler
 	 */
 	public function SetPath($path="")
 	{		
-		if($path != ""){ 			
+		if($path != "")
+		{ 			
 			$this->path = $this->fixPath($path);
 		}
 		else{
@@ -268,7 +273,8 @@ class fileDirHandler
 	 * @access public
 	 * @return string
 	 */
-	public function Read(){
+	public function Read()
+	{
 		$handle = fopen($this->path, "r");
 		$contents = fread($handle, filesize($this->path));
 		fclose($handle);
@@ -283,7 +289,8 @@ class fileDirHandler
 	 * @param bool overwrite
 	 * @return bool
 	 */
-	public function Write($contents,$overwrite=false){
+	public function Write($contents,$overwrite=false)
+	{
 		
 		$flag = $overwrite ? "w" : "a";
 		
@@ -317,12 +324,14 @@ class fileDirHandler
 		{
 			$parts = explode("/", $this->path);
 			$path = "";
-			foreach ($parts as $part){
+			foreach ($parts as $part)
+			{
 				if($part == end($parts)) break;
 				$path .= $part . "/";
 				@mkdir($path, $this->permissions);				
 			}
-			if($handle = fopen($this->path, 'w')){
+			if($handle = fopen($this->path, 'w'))
+			{
 				fclose($handle);
 			}
 		}
@@ -330,7 +339,8 @@ class fileDirHandler
 		{
 			$parts = explode("/", $this->path);
 			$path = "";
-			foreach ($parts as $part){
+			foreach ($parts as $part)
+			{
 				$path .= $part . "/";
 				@mkdir($path, $this->permissions);
 			}
@@ -530,7 +540,8 @@ class fileDirHandler
 	 * @param string $includeSelfFolder
 	 * @access void
 	 */
-	public function Move($destination,$includeSelfFolder = false){
+	public function Move($destination,$includeSelfFolder = false)
+	{
 		
 		$copyResult = $this->Copy($destination,$includeSelfFolder);
 		
@@ -561,7 +572,8 @@ class fileDirHandler
 	 * @param string $dir
 	 * @return array
 	 */
-	public function listDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir=""){
+	public function listDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir="")
+	{
 
 		// Lowercase excluded arrays
 		$exclude_extension = array_map("strtolower", $exclude_extension);
@@ -588,8 +600,10 @@ class fileDirHandler
 			// omit dots and extension excluded
 			if($file == "." || $file == ".." || in_array($extension, $exclude_extension)){ continue; }
 			
-			if(is_dir($dir . $file)){
-				if(!in_array(strtolower($file), $exclude_dir)){
+			if(is_dir($dir . $file))
+			{
+				if(!in_array(strtolower($file), $exclude_dir))
+				{
 					$info				= array();
 					$info["type"]		= "dir";
 					$info["parentDir"]	= $dir;
@@ -598,7 +612,8 @@ class fileDirHandler
 					$list[] = $info;
 				}
 			}else{
-				if(!in_array(strtolower($file), $exclude_file)){
+				if(!in_array(strtolower($file), $exclude_file))
+				{
 					$info				= array();					
 					$info["type"]		= "file";
 					$info["parentDir"]	= $dir;
@@ -611,7 +626,8 @@ class fileDirHandler
 				}
 			}
 			
-			if($recursive && is_dir($dir . $file) && !in_array(strtolower($file), $exclude_dir)){
+			if($recursive && is_dir($dir . $file) && !in_array(strtolower($file), $exclude_dir))
+			{
 				$this->listDir($recursive, $exclude_extension, $exclude_file, $exclude_dir, $list, $dir . $file);
 			}
 			
@@ -636,7 +652,8 @@ class fileDirHandler
 	 * @param string $dir
 	 * @return array
 	 */
-	public function simpleListDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir=""){
+	public function simpleListDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir="")
+	{
 
 		// Lowercase excluded arrays
 		$exclude_extension = array_map("strtolower", $exclude_extension);
@@ -663,7 +680,8 @@ class fileDirHandler
 			// omit dots and extension excluded
 			if($file == "." || $file == ".." || in_array($extension, $exclude_extension)){ continue; }
 
-			if(is_dir($dir . $file)){
+			if(is_dir($dir . $file))
+			{
 				if(!in_array(strtolower($file), $exclude_dir))
 				{
 					$list[] = $dir . $file;
@@ -675,7 +693,8 @@ class fileDirHandler
 				}
 			}
 
-			if($recursive && is_dir($dir . $file) && !in_array(strtolower($file), $exclude_dir)){
+			if($recursive && is_dir($dir . $file) && !in_array(strtolower($file), $exclude_dir))
+			{
 				$this->simpleListDir($recursive, $exclude_extension, $exclude_file, $exclude_dir, $list, $dir . $file);
 			}
 			
@@ -965,7 +984,7 @@ class fileDirHandler
 	
 	
 	/**
-	 * list the files and directories inside a zip file
+	 * lists the files and directories inside a zip file,returns associative array with information of each file/directory
 	 *
 	 * @param array $exclude_extension
 	 * @param array $exclude_file
@@ -1005,13 +1024,15 @@ class fileDirHandler
 				
 				//
 				if($extension == "" && substr($filePath, -1) == "/"){
-					if(!in_array(strtolower($ruteParts["basename"]), $exclude_dir)){
+					if(!in_array(strtolower($ruteParts["basename"]), $exclude_dir))
+					{
 						$file["type"] = "dir";	
 						$file["comment"] = $zip->getCommentIndex($i);
 						$list[] = $file;
 					}
 				}else{
-					if(!in_array(strtolower($ruteParts["basename"]), $exclude_file)){
+					if(!in_array(strtolower($ruteParts["basename"]), $exclude_file))
+					{
 						$file["type"] = "file";
 						$file["comment"] = $zip->getCommentIndex($i);
 						$list[] = $file;
@@ -1028,6 +1049,15 @@ class fileDirHandler
 		
 	}
 	
+	/**
+	 * lists the files and directories inside a zip file, returns numeric array with the names of each file/directory
+	 *
+	 * @param array $exclude_extension
+	 * @param array $exclude_file
+	 * @param array $exclude_dir
+	 * @access public
+	 * @return array
+	 */
 	public function zipSimpleListing($exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
 	{	
 		// Lowercase excluded arrays
@@ -1165,7 +1195,7 @@ class fileDirHandler
 	}
 	
 	/**
-	 * Add files to an existing zip with the file or directory path set, or define list of files or directories to add
+	 * Add files to an existing zip with the file or directory path set, or a list of files or directories to add
 	 *
 	 * 
 	 * @param string $zipName	 
@@ -1398,7 +1428,7 @@ class fileDirHandler
 	
 	
 	/**
-	 * Zip file or directory
+	 * Move a list of files to other path in the same zip and if is defined can move to another zip file also
 	 *
 	 * @param mixed $files
 	 * @param string $destination
@@ -1472,17 +1502,9 @@ class fileDirHandler
 		}
 		
 	}
-	
-	
 
 	
-
-	
-
-
-
-	
-}
+}//EOC
 
 
 

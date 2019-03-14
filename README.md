@@ -2,6 +2,54 @@
 
 Simple PHP class to handle some useful functions for directory, file and zip compression
 
+- set of file / directories functions
+- set of zip functions
+- move or copy files between zip files
+- write less code
+
+
+## Properties
+
+- **permissions**: dir or file access permissions used when create, default 0755
+- **path**: The set route in the file system
+- **parentDir**: Parent directory's path
+- **name**: name of the file or directory without extension
+- **fileName**: name of the file or directory, if is file contain extension
+- **extension**: file extension if has
+- **mimeType**: MIME type -Multipurpose Internet Mail Extensions-, containing a type and a subtype in a string e.g. .jpg image is "image/jpeg"
+- **type**: type of path directory or file ("dir" or "file")
+- **exist**: boolean, if the file or directory exist in the file system
+- **tempDir**: temp directory for some zip functions of the class, is created and deleted when is used , default 'fileDirHandler_temp'
+
+
+## Methods
+
+- **getPath()**: get the current path
+- **SetPath($path="")**: Sets the pointing route in the file system and sets some properties in the class
+- **getMimeType($file = "")**: Get MIME Type of a file -Multipurpose Internet Mail Extensions-, containing a type and a subtype in a string e.g. .xls is "application/vnd.ms-excel"
+- **Read()**: Read file content using fopen and fread, return all file contents
+- **Write($contents,$overwrite=false)**: Write string content to file using fopen and fwrite
+- **Create($overwrite = false)**: create directories and files, creates the parent directories if they doesn't exist
+- **Delete($onlyFilesInsideDir = false)**: Delete a file or directory, If it's a directory all the content will also be deleted.
+- **Copy($destination, $includeSelfFolder = false)**: Copy directory's or files
+- **Move($destination,$includeSelfFolder = false)**: Move directory or file
+- **listDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir="")**: Lists directory content, return an associative array with information of each file/directory
+- **simpleListDir($recursive=true, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array(), &$list=array(), $dir="")**: List directory content in a simple numeric array with the files and directories
+- **normalizeFilesList($files=null)**: normalize list of files to simple numeric array, acept file list created from this class and comma separated string
+- **zipCreate($zipName = "",$overwrite = false,$recursive = true,$includeSelfFolder = false,$includeEmptyFolders= true, $createOnPath = "",$fromFiles= null, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())**: create zip file with the file or directory path set, or define list of files or directories to add
+- **zipListing($exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())**: lists the files and directories inside a zip file,returns associative array with information of each file/directory
+- **lists the files and directories inside a zip file, returns numeric array with the names of each file/directory**: zipSimpleListing($exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())
+- **getZiFileInfo($file)**: return an array with the information of the file inside the zip, false if no found
+- **zipDelete($files = array())**: delete a list of files inside the zip, if is directory it deletes recursively
+- **zipAdd($zipName = "",$recursive = true,$includeSelfFolder = false,$includeEmptyFolders= true, $addOnPath = "",$fromFiles= null, $exclude_extension=array(), $exclude_file=array(), $exclude_dir=array())**: Add files to an existing zip with the file or directory path set, or a list of files or directories to add
+- **setZipComment($archiveComment = "",$files = array())**: add comment to the entire zip file or each individual file
+- **getZipComment()**: return the comment to the entire zip
+- **zipRead($file = "")**: Read and return the content of file inside a zip
+- **zipWrite($file = "",$content ="",$overwrite=false)**: Write string content to file inside a zip, creates the file if not exist
+- **zipExtract($destination  = "",$files = null)**: extract the content of the entire zip file, or a list of files / directories
+- **zipCopy($files = null,$destination = "",$otherZipFile = "")**: copy a list of files to other path in the same zip and if is defined can copy to another zip file also
+- **zipMove($files = null,$destination = "",$otherZipFile = "")**: type of path directory or file ("dir" or "file")
+
 
 ## set working Path
 ```
